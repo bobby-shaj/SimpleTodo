@@ -1,6 +1,9 @@
 package com.example.simpletodo;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-
+    public static final int EDIT_REQUEST_CODE = 12;
     List<String> items;
 
     Button btn_add;
@@ -49,7 +52,18 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        itemsAdapter = new ItemsAdapter(items, onLongClickListener);
+        ItemsAdapter.OnClickListener onClickListener = new ItemsAdapter.OnClickListener() {
+            @Override
+            public void onItemClicked(int position) {
+                Intent toEditActivity = new Intent(MainActivity.this, EditActivity.class);
+                String itemClicked = items.get(position);
+                toEditActivity.putExtra("itemClicked", itemClicked);
+                toEditActivity.putExtra("position", position);
+                startActivityForResult(toEditActivity, EDIT_REQUEST_CODE);
+            }
+        };
+
+        itemsAdapter = new ItemsAdapter(items, onLongClickListener, onClickListener);
         rv_items.setAdapter(itemsAdapter);
         rv_items.setLayoutManager(new LinearLayoutManager(this));
 
@@ -65,6 +79,20 @@ public class MainActivity extends AppCompatActivity {
                 saveItems();
             }
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == EDIT_REQUEST_CODE && resultCode == RESULT_OK) {
+            String editedItem = data.getStringExtra("editedItem");
+            int position = data.getIntExtra("position", 0);
+
+            items.remove(position);
+            items.add(position, editedItem);
+            itemsAdapter.notifyDataSetChanged();
+            saveItems();
+        }
     }
 
     private File getDataFile(){
